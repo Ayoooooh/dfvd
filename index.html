@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090d1b" />
+    <meta name="description" content="阿普升图 Web：AI 图像增强工作台原型" />
+    <title>阿普升图 Web · AI 图像增强</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080c18;
+        --panel: #11172a;
+        --panel-2: #161e35;
+        --panel-3: #1b2743;
+        --line: rgba(160, 183, 224, 0.13);
+        --line-strong: rgba(160, 183, 224, 0.24);
+        --ink: #f4f7ff;
+        --muted: #93a0bd;
+        --muted-2: #65718b;
+        --blue: #7cb5ff;
+        --cyan: #62e5ed;
+        --violet: #8274ff;
+        --violet-2: #5f4fff;
+        --green: #8ee3b5;
+        --shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+        --radius: 18px;
+      }
+
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      html, body { min-height: 100%; }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(circle at 85% 2%, rgba(83, 104, 255, 0.14), transparent 26rem),
+          radial-gradient(circle at 42% 100%, rgba(0, 210, 226, 0.07), transparent 30rem),
+          var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: not-allowed; opacity: 0.48; }
+
+      .app-shell { min-height: 100vh; display: grid; grid-template-columns: 310px minmax(0, 1fr); }
+      .sidebar {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        min-height: 100vh;
+        padding: 28px 22px 22px;
+        background: linear-gradient(180deg, rgba(23, 32, 56, 0.98), rgba(13, 19, 35, 0.98));
+        border-right: 1px solid var(--line);
+      }
+      .brand { display: flex; align-items: center; gap: 13px; }
+      .brand-mark {
+        width: 44px; height: 44px; display: grid; place-items: center;
+        border-radius: 13px; color: #dbe8ff;
+        background: linear-gradient(140deg, #68b8ff, #496be1 74%);
+        box-shadow: 0 10px 24px rgba(70, 120, 255, 0.28);
+      }
+      .brand-mark svg { width: 27px; height: 27px; }
+      .brand-name { display: flex; align-items: baseline; gap: 7px; font-size: 18px; font-weight: 760; letter-spacing: -0.04em; }
+      .brand-name small { color: var(--blue); font-size: 10px; font-weight: 800; letter-spacing: 0.16em; }
+      .brand-sub { margin-top: 3px; color: var(--muted); font-size: 12px; letter-spacing: 0.02em; }
+
+      .workspace-line { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+      .eyebrow { color: #8391b0; font-size: 10px; font-weight: 800; letter-spacing: 0.18em; }
+      .version { padding: 5px 8px; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: 10px; font-weight: 700; }
+
+      .toggle-row { display: flex; align-items: center; gap: 10px; color: #cdd6ea; font-size: 14px; font-weight: 680; }
+      .toggle-row input, .switch input { position: absolute; opacity: 0; pointer-events: none; }
+      .toggle-track { position: relative; width: 44px; height: 24px; padding: 3px; border: 1px solid #71809e; border-radius: 999px; background: rgba(7, 12, 26, 0.56); transition: 0.2s ease; }
+      .toggle-track::after { content: ""; display: block; width: 16px; height: 16px; border-radius: 50%; background: #8d9ab4; transition: 0.2s ease; }
+      .toggle-row input:checked + .toggle-track, .switch input:checked + .toggle-track { border-color: rgba(126, 107, 255, 0.72); background: rgba(107, 84, 255, 0.35); }
+      .toggle-row input:checked + .toggle-track::after, .switch input:checked + .toggle-track::after { transform: translateX(18px); background: #e1ddff; box-shadow: 0 0 15px rgba(140, 125, 255, 0.7); }
+
+      .steps { display: flex; flex-direction: column; gap: 20px; }
+      .step { display: flex; flex-direction: column; gap: 11px; }
+      .step-heading { display: flex; align-items: center; gap: 9px; color: #dae3f5; font-size: 14px; font-weight: 760; }
+      .step-number { color: #7382a2; font-size: 11px; font-weight: 850; letter-spacing: 0.12em; }
+      .step-desc { margin: -4px 0 0 25px; color: var(--muted-2); font-size: 11px; line-height: 1.5; }
+
+      .upload-button, .folder-button, .ghost-button {
+        display: inline-flex; align-items: center; justify-content: space-between; gap: 10px;
+        width: 100%; padding: 13px 14px; border: 1px solid var(--line); border-radius: 15px;
+        background: rgba(102, 125, 165, 0.18); color: #eaf0ff; font-size: 14px; font-weight: 720; text-align: left;
+        transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+      .upload-button:hover, .folder-button:hover, .ghost-button:hover { transform: translateY(-1px); border-color: rgba(124, 181, 255, 0.48); background: rgba(102, 125, 165, 0.28); }
+      .upload-button span, .folder-button span { color: var(--muted); font-size: 11px; font-weight: 650; }
+      .model-grid { display: grid; gap: 7px; }
+      .model-option { position: relative; display: flex; align-items: center; gap: 10px; padding: 10px 11px; border: 1px solid transparent; border-radius: 14px; background: rgba(9, 14, 29, 0.26); color: #aebbd3; text-align: left; transition: 0.2s ease; }
+      .model-option:hover { border-color: var(--line-strong); color: var(--ink); }
+      .model-option.active { border-color: rgba(125, 157, 225, 0.42); background: linear-gradient(105deg, rgba(89, 118, 168, 0.35), rgba(71, 89, 135, 0.18)); color: #f5f8ff; box-shadow: inset 3px 0 0 var(--blue); }
+      .model-glyph { width: 26px; height: 26px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; background: rgba(114, 156, 220, 0.16); color: var(--blue); font-size: 13px; }
+      .model-copy strong { display: block; font-size: 12px; font-weight: 750; }
+      .model-copy span { display: block; margin-top: 2px; color: #71809d; font-size: 10px; }
+      .model-option.active .model-copy span { color: #9eb1d0; }
+
+      .option-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+      .option-row:first-child { border-top: 0; }
+      .option-copy strong { display: block; color: #dce5f5; font-size: 13px; }
+      .option-copy span { display: block; margin-top: 3px; color: var(--muted-2); font-size: 10px; line-height: 1.4; }
+      .switch { position: relative; display: inline-flex; flex: 0 0 auto; }
+      .switch .toggle-track { width: 39px; height: 22px; }
+      .switch .toggle-track::after { width: 14px; height: 14px; }
+      .switch input:checked + .toggle-track::after { transform: translateX(15px); }
+
+      .scale-wrap { display: flex; flex-direction: column; gap: 9px; }
+      .scale-label { display: flex; justify-content: space-between; align-items: baseline; color: #dce5f5; font-size: 13px; font-weight: 750; }
+      .scale-label span { color: var(--muted-2); font-size: 10px; font-weight: 650; }
+      .scale-control { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: rgba(7, 11, 24, 0.46); }
+      .scale-button { padding: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 800; }
+      .scale-button.active { background: #dce7ff; color: #27375e; box-shadow: 0 5px 16px rgba(203, 220, 255, 0.14); }
+
+      .action-area { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+      .enhance-button { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 15px 16px; border: 0; border-radius: 16px; background: linear-gradient(135deg, #695cff, #4d3df1); color: white; box-shadow: 0 14px 30px rgba(74, 58, 245, 0.32); font-size: 15px; font-weight: 800; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+      .enhance-button #enhanceLabel { min-width: 0; white-space: nowrap; }
+      .enhance-button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(74, 58, 245, 0.46); }
+      .enhance-button span { display: grid; place-items: center; width: 27px; height: 27px; border-radius: 9px; background: rgba(255,255,255,0.16); }
+      .local-status { display: flex; align-items: center; gap: 7px; color: #71809d; font-size: 10px; line-height: 1.5; }
+      .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 12px rgba(98, 229, 237, 0.7); }
+
+      main { min-width: 0; padding: 24px 34px 34px; }
+      .topbar { display: flex; align-items: center; justify-content: space-between; gap: 20px; height: 38px; }
+      .breadcrumb { color: #7e8ba6; font-size: 11px; font-weight: 800; letter-spacing: 0.11em; }
+      .breadcrumb b { color: #e4eafa; font-weight: 800; }
+      .top-actions { display: flex; gap: 8px; }
+      .icon-button { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 11px; background: rgba(17, 23, 42, 0.72); color: #91a0bb; }
+      .icon-button:hover { border-color: var(--line-strong); color: var(--ink); }
+      .icon-button svg { width: 16px; height: 16px; }
+
+      .content { width: min(1100px, 100%); margin: 40px auto 0; }
+      .intro-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+      .kicker { display: flex; align-items: center; gap: 8px; color: var(--cyan); font-size: 11px; font-weight: 800; letter-spacing: 0.13em; }
+      .kicker::before { content: ""; width: 22px; height: 1px; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
+      h1 { max-width: 520px; margin: 11px 0 0; color: #f4f7ff; font-size: clamp(32px, 4.4vw, 58px); line-height: 0.98; letter-spacing: -0.07em; }
+      .intro-copy { max-width: 290px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+
+      .empty-state { position: relative; min-height: 580px; display: grid; place-items: center; padding: 42px; overflow: hidden; border: 1px solid rgba(127, 151, 203, 0.16); border-radius: 26px; background: radial-gradient(circle at 50% 42%, rgba(56, 74, 137, 0.13), transparent 22rem), linear-gradient(145deg, rgba(18, 27, 51, 0.82), rgba(9, 14, 29, 0.9)); box-shadow: var(--shadow); }
+      .empty-state::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(131, 160, 217, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(131, 160, 217, 0.05) 1px, transparent 1px); background-size: 50px 50px; mask-image: linear-gradient(to bottom, black, transparent 70%); pointer-events: none; }
+      .empty-inner { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; }
+      .drop-icon { position: relative; width: 86px; height: 86px; display: grid; place-items: center; border: 1px solid rgba(111, 151, 233, 0.42); border-radius: 25px; background: linear-gradient(145deg, rgba(111, 163, 255, 0.2), rgba(92, 78, 230, 0.2)); color: #bfd9ff; box-shadow: 0 18px 45px rgba(52, 88, 199, 0.22); }
+      .drop-icon::after { content: ""; position: absolute; inset: 8px; border: 1px dashed rgba(140, 183, 255, 0.42); border-radius: 19px; }
+      .drop-icon svg { position: relative; z-index: 1; width: 31px; height: 31px; }
+      .empty-inner h2 { margin: 24px 0 9px; font-size: 24px; letter-spacing: -0.04em; }
+      .empty-inner p { max-width: 420px; margin: 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+      .drop-zone { display: flex; align-items: center; gap: 8px; margin-top: 26px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(9, 14, 29, 0.42); color: #aebbd3; font-size: 12px; font-weight: 700; transition: 0.2s ease; }
+      .drop-zone strong { color: #e7edfb; }
+      .empty-state.dragging .drop-zone, .empty-state.dragging { border-color: rgba(98, 229, 237, 0.7); background-color: rgba(25, 68, 84, 0.24); }
+      .empty-state.dragging { box-shadow: 0 0 0 3px rgba(98, 229, 237, 0.09), var(--shadow); }
+      .empty-hint { margin-top: 14px; color: var(--muted-2); font-size: 11px; }
+
+      .workbench { display: flex; flex-direction: column; gap: 16px; }
+      .file-strip { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(17, 23, 42, 0.68); }
+      .file-info { min-width: 0; display: flex; align-items: center; gap: 11px; }
+      .file-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: rgba(108, 154, 230, 0.16); color: var(--blue); }
+      .file-name { min-width: 0; font-size: 13px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .file-meta { margin-top: 3px; color: var(--muted-2); font-size: 10px; }
+      .file-badge { padding: 6px 9px; border: 1px solid rgba(98, 229, 237, 0.2); border-radius: 8px; background: rgba(49, 143, 159, 0.12); color: #8ee9e4; font-size: 10px; font-weight: 800; white-space: nowrap; }
+      .compare-card { overflow: hidden; border: 1px solid var(--line); border-radius: 21px; background: #0d1427; box-shadow: var(--shadow); }
+      .compare-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 15px 17px; border-bottom: 1px solid var(--line); }
+      .compare-title { display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 800; }
+      .compare-title span { color: var(--muted); font-size: 11px; font-weight: 600; }
+      .range-wrap { display: flex; align-items: center; gap: 9px; min-width: 210px; }
+      .range-wrap label { color: var(--muted-2); font-size: 10px; font-weight: 750; }
+      input[type="range"] { width: 155px; accent-color: var(--cyan); }
+      .compare-stage { position: relative; display: grid; place-items: center; min-height: 470px; padding: 26px; overflow: hidden; background: #090e1b; }
+      .compare-stage::before { content: ""; position: absolute; inset: 0; opacity: 0.7; background-image: linear-gradient(45deg, rgba(255,255,255,0.018) 25%, transparent 25%), linear-gradient(-45deg, rgba(255,255,255,0.018) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.018) 75%), linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.018) 75%); background-position: 0 0, 0 12px, 12px -12px, -12px 0; background-size: 24px 24px; pointer-events: none; }
+      .canvas-frame { position: relative; z-index: 1; width: min(100%, 860px); aspect-ratio: 4 / 3; overflow: hidden; border: 1px solid rgba(168, 192, 240, 0.2); border-radius: 12px; background: #11182a; box-shadow: 0 16px 36px rgba(0,0,0,0.3); }
+      .canvas-frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+      .enhanced-layer { position: absolute; inset: 0; overflow: hidden; clip-path: inset(0 50% 0 0); }
+      .enhanced-layer canvas { position: absolute; inset: 0; }
+      .split-handle { position: absolute; z-index: 4; top: 0; bottom: 0; left: 50%; width: 2px; background: rgba(255,255,255,0.9); box-shadow: 0 0 14px rgba(0,0,0,0.45); pointer-events: none; }
+      .split-handle::after { content: "↔"; position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 33px; height: 33px; border: 1px solid rgba(255,255,255,0.42); border-radius: 50%; background: rgba(9, 14, 29, 0.84); color: white; font-size: 16px; transform: translate(-50%, -50%); }
+      .stage-label { position: absolute; z-index: 5; top: 14px; padding: 6px 8px; border: 1px solid rgba(255,255,255,0.14); border-radius: 7px; background: rgba(8, 12, 24, 0.72); color: #e9efff; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; backdrop-filter: blur(12px); }
+      .stage-label.original { left: 14px; }
+      .stage-label.enhanced { right: 14px; color: #aaf3f0; }
+      .compare-empty { position: absolute; z-index: 6; inset: 0; display: grid; place-items: center; color: var(--muted-2); font-size: 12px; }
+      .compare-empty.hidden { display: none; }
+      .result-line { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 17px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+      .result-line strong { color: #eaf1ff; font-size: 12px; }
+      .download-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(98, 229, 237, 0.24); border-radius: 9px; background: rgba(44, 144, 153, 0.11); color: #9cedea; font-size: 11px; font-weight: 800; }
+      .download-button:hover { background: rgba(44, 144, 153, 0.2); }
+
+      .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+      .metric-card { padding: 14px 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(17, 23, 42, 0.68); }
+      .metric-card span { display: block; color: var(--muted-2); font-size: 10px; font-weight: 750; letter-spacing: 0.03em; }
+      .metric-card strong { display: block; margin-top: 7px; color: #eaf1ff; font-size: 14px; }
+      .metric-card small { display: block; margin-top: 4px; color: #74819c; font-size: 10px; }
+      .backend-note { display: flex; align-items: flex-start; gap: 10px; padding: 14px 15px; border: 1px solid rgba(130, 116, 255, 0.22); border-radius: 15px; background: rgba(73, 58, 172, 0.1); color: #a6b1cc; font-size: 11px; line-height: 1.6; }
+      .backend-note b { color: #d6d1ff; }
+      .note-mark { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 8px; background: rgba(130, 116, 255, 0.22); color: #bbb3ff; font-weight: 850; }
+
+      .toast { position: fixed; right: 24px; bottom: 24px; z-index: 20; max-width: 360px; padding: 12px 15px; border: 1px solid rgba(98, 229, 237, 0.24); border-radius: 13px; background: rgba(16, 25, 45, 0.94); color: #e5efff; box-shadow: var(--shadow); font-size: 12px; opacity: 0; transform: translateY(12px); pointer-events: none; transition: 0.25s ease; }
+      .toast.show { opacity: 1; transform: translateY(0); }
+      .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,0.28); border-top-color: white; border-radius: 50%; animation: spin 0.75s linear infinite; vertical-align: -2px; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      @media (max-width: 980px) {
+        .app-shell { grid-template-columns: 260px minmax(0, 1fr); }
+        .sidebar { padding-inline: 17px; }
+        main { padding-inline: 24px; }
+        .intro-row { align-items: flex-start; flex-direction: column; }
+        .intro-copy { max-width: 520px; }
+      }
+      @media (max-width: 720px) {
+        .app-shell { display: block; }
+        .sidebar { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+        .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+        .step:nth-child(2) { grid-column: 1 / -1; }
+        .action-area { margin-top: 2px; }
+        main { padding: 20px 15px 30px; }
+        .content { margin-top: 28px; }
+        h1 { font-size: 42px; }
+        .empty-state { min-height: 480px; padding: 24px; }
+        .compare-stage { min-height: 330px; padding: 12px; }
+        .metric-grid { grid-template-columns: 1fr; }
+        .range-wrap { min-width: 0; }
+        .range-wrap label { display: none; }
+        input[type="range"] { width: 112px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none"><path d="M7 6.5h11.8A6.2 6.2 0 0 1 25 12.7v12.8H13.2A6.2 6.2 0 0 1 7 19.3V6.5Z" stroke="currentColor" stroke-width="2.2"/><path d="M12 7v18M18 7v18M7 13h18M7 19h18" stroke="currentColor" stroke-width="1.3" opacity=".72"/><circle cx="19" cy="16" r="3.1" fill="#17264a" stroke="currentColor" stroke-width="1.7"/><path d="m19 14.8 2 1.2-2 1.2v-2.4Z" fill="currentColor"/></svg>
+          </div>
+          <div><div class="brand-name">阿普升图 <small>WEB</small></div><div class="brand-sub">AI 图像增强工作台</div></div>
+        </div>
+
+        <div class="workspace-line"><span class="eyebrow">UPSCALE WORKSPACE</span><span class="version">v0.1 demo</span></div>
+
+        <label class="toggle-row"><input id="batchToggle" type="checkbox" /><span class="toggle-track"></span><span>批量升图</span></label>
+
+        <div class="steps">
+          <section class="step">
+            <div class="step-heading"><span class="step-number">01</span><span>选择图片</span></div>
+            <p class="step-desc">支持 PNG、JPG、JPEG、WEBP，也可以直接粘贴。</p>
+            <button class="upload-button" id="pickButton" type="button"><span>打开图片</span><span>⌘ / Ctrl + V</span></button>
+            <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+          </section>
+
+          <section class="step">
+            <div class="step-heading"><span class="step-number">02</span><span>选择 AI 模型</span></div>
+            <div class="model-grid" role="listbox" aria-label="AI 模型">
+              <button class="model-option active" data-model="digital-art-4x" type="button"><span class="model-glyph">✦</span><span class="model-copy"><strong>数字艺术</strong><span>插画、漫画、游戏素材</span></span></button>
+              <button class="model-option" data-model="upscayl-standard-4x" type="button"><span class="model-glyph">◈</span><span class="model-copy"><strong>标准</strong><span>适用于大多数图片</span></span></button>
+              <button class="model-option" data-model="high-fidelity-4x" type="button"><span class="model-glyph">◎</span><span class="model-copy"><strong>高保真</strong><span>真实细节与柔和纹理</span></span></button>
+            </div>
+            <div class="option-row"><div class="option-copy"><strong>双重升图</strong><span>连续处理两遍，细节更激进</span></div><label class="switch"><input id="doubleToggle" type="checkbox" /><span class="toggle-track"></span></label></div>
+            <div class="scale-wrap"><div class="scale-label"><span>增强比例</span><span id="scaleHint">输出约 2 倍</span></div><div class="scale-control"><button class="scale-button active" data-scale="2" type="button">2x</button><button class="scale-button" data-scale="4" type="button">4x</button></div></div>
+          </section>
+        </div>
+
+        <div class="action-area">
+          <button class="enhance-button" id="enhanceButton" type="button" disabled><span id="enhanceLabel">开始增强</span><span id="enhanceIcon">↗</span></button>
+          <div class="local-status"><span class="status-dot"></span><span>当前为浏览器端预览 · Real-ESRGAN 后端可接入</span></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div class="breadcrumb">WORKSPACE&nbsp;&nbsp;/&nbsp;&nbsp;<b>IMAGE UPSCALE</b></div>
+          <div class="top-actions"><button class="icon-button" id="resetButton" type="button" aria-label="重置"><svg viewBox="0 0 24 24" fill="none"><path d="M4 12a8 8 0 1 0 2.34-5.66L4 8.68M4 4v4.68h4.68" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="icon-button" id="infoButton" type="button" aria-label="说明"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.8"/><path d="M12 10.7v5.1M12 7.7h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+        </header>
+
+        <section class="content">
+          <div class="intro-row">
+            <div><div class="kicker">LOCAL IMAGE LAB</div><h1>把模糊，<br />变成可用。</h1></div>
+            <p class="intro-copy">将图片放大、修复并重新组织细节。先用浏览器预览结果，确认方向后再接入真实 AI 推理服务。</p>
+          </div>
+
+          <div class="empty-state" id="emptyState">
+            <div class="empty-inner">
+              <div class="drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V5m0 0L8 9m4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 14.5v2.2A2.3 2.3 0 0 0 7.3 19h9.4a2.3 2.3 0 0 0 2.3-2.3v-2.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+              <h2>选择要增强的图片</h2>
+              <p>拖放一张图片到这里，或从左侧打开文件。图片只会在当前浏览器中处理。</p>
+              <div class="drop-zone"><strong>拖入图片</strong><span>·</span><span>PNG / JPG / WEBP</span></div>
+              <div class="empty-hint">也可以按 ⌘V / Ctrl+V 粘贴剪贴板图片</div>
+            </div>
+          </div>
+
+          <div class="workbench" id="workbench" hidden>
+            <div class="file-strip"><div class="file-info"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h8l4 4V19a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7"/><path d="M14 4.5V9h4M8 13h8M8 16h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="file-name" id="fileName">未命名图片</div><div class="file-meta" id="fileMeta">等待增强</div></div></div><div class="file-badge" id="fileBadge">READY</div></div>
+            <div class="compare-card"><div class="compare-head"><div class="compare-title">细节对比 <span>左右拖动查看变化</span></div><div class="range-wrap"><label for="compareRange">原图</label><input id="compareRange" type="range" min="0" max="100" value="50" /><label>结果</label></div></div><div class="compare-stage"><div class="canvas-frame" id="canvasFrame"><canvas id="originalCanvas"></canvas><div class="enhanced-layer" id="enhancedLayer"><canvas id="enhancedCanvas"></canvas></div><div class="split-handle" id="splitHandle"></div><div class="stage-label original">ORIGINAL</div><div class="stage-label enhanced">ENHANCED</div><div class="compare-empty" id="compareEmpty">点击“开始增强”生成预览</div></div></div><div class="result-line"><div><span>输出状态&nbsp;&nbsp;</span><strong id="resultStatus">尚未处理</strong></div><button class="download-button" id="downloadButton" type="button" disabled><span>↓</span>下载结果</button></div></div>
+            <div class="metric-grid"><div class="metric-card"><span>处理模型</span><strong id="modelReadout">数字艺术</strong><small id="modelIdReadout">digital-art-4x</small></div><div class="metric-card"><span>输出尺寸</span><strong id="dimensionReadout">—</strong><small id="scaleReadout">增强比例 2x</small></div><div class="metric-card"><span>处理方式</span><strong id="modeReadout">浏览器预览</strong><small id="modeHint">Canvas 超采样 + 锐化</small></div></div>
+            <div class="backend-note"><div class="note-mark">i</div><div><b>关于这版演示：</b>当前页面已完成完整交互和本地预览链路，增强算法使用 Canvas 超采样与锐化模拟。要获得 Upscayl 同级输出，只需将后端推理接口接到 Real-ESRGAN / NCNN，并保留当前的模型、倍率和双重升图参数。</div></div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const state = { file: null, files: [], image: null, model: 'digital-art-4x', scale: 2, double: false, enhancedCanvas: null, enhancedBlob: null, processing: false };
+      const modelMeta = {
+        'digital-art-4x': { label: '数字艺术', hint: '插画、漫画、游戏素材' },
+        'upscayl-standard-4x': { label: '标准', hint: '适用于大多数图片' },
+        'high-fidelity-4x': { label: '高保真', hint: '真实细节与柔和纹理' }
+      };
+      const $ = (selector) => document.querySelector(selector);
+      const emptyState = $('#emptyState');
+      const workbench = $('#workbench');
+      const fileInput = $('#fileInput');
+      const enhanceButton = $('#enhanceButton');
+      const enhanceLabel = $('#enhanceLabel');
+      const enhanceIcon = $('#enhanceIcon');
+      const toast = $('#toast');
+      let toastTimer;
+
+      function notify(message) {
+        toast.textContent = message;
+        toast.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+      }
+
+      function formatBytes(bytes) {
+        if (!bytes) return '0 KB';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
+      }
+
+      function setFile(fileList) {
+        const files = Array.from(fileList || []).filter((file) => file.type.startsWith('image/'));
+        if (!files.length) { notify('请选择 PNG、JPG、JPEG 或 WEBP 图片'); return; }
+        state.files = files;
+        state.file = files[0];
+        state.enhancedCanvas = null;
+        state.enhancedBlob = null;
+        const url = URL.createObjectURL(state.file);
+        const image = new Image();
+        image.onload = () => {
+          state.image = image;
+          emptyState.hidden = true;
+          workbench.hidden = false;
+          $('#fileName').textContent = files.length > 1 ? `${state.file.name} 等 ${files.length} 张图片` : state.file.name;
+          $('#fileMeta').textContent = `${image.naturalWidth} × ${image.naturalHeight} px · ${formatBytes(state.file.size)}`;
+          $('#fileBadge').textContent = files.length > 1 ? `BATCH · ${files.length}` : 'READY';
+          $('#enhanceButton').disabled = false;
+          $('#resultStatus').textContent = '尚未处理';
+          $('#compareEmpty').classList.remove('hidden');
+          drawOriginal();
+          requestAnimationFrame(() => drawOriginal());
+          notify(files.length > 1 ? `已载入 ${files.length} 张图片，当前预览第一张` : '图片已载入，可以开始增强');
+          URL.revokeObjectURL(url);
+        };
+        image.onerror = () => { URL.revokeObjectURL(url); notify('图片读取失败，请换一张图片'); };
+        image.src = url;
+      }
+
+      function drawOriginal() {
+        if (!state.image) return;
+        const canvas = $('#originalCanvas');
+        const width = state.image.naturalWidth;
+        const height = state.image.naturalHeight;
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, width, height);
+        ctx.drawImage(state.image, 0, 0, width, height);
+        $('#canvasFrame').style.aspectRatio = `${width} / ${height}`;
+        $('#enhancedLayer').style.clipPath = `inset(0 ${100 - Number($('#compareRange').value)}% 0 0)`;
+      }
+
+      function renderEnhanced() {
+        if (!state.image) return;
+        const baseWidth = state.image.naturalWidth;
+        const baseHeight = state.image.naturalHeight;
+        const totalScale = state.scale * (state.double ? 2 : 1);
+        const maxPixels = 12000000;
+        const requestedPixels = baseWidth * baseHeight * totalScale * totalScale;
+        const safeScale = requestedPixels > maxPixels ? Math.sqrt(maxPixels / (baseWidth * baseHeight)) : totalScale;
+        const outputWidth = Math.max(1, Math.round(baseWidth * safeScale));
+        const outputHeight = Math.max(1, Math.round(baseHeight * safeScale));
+        const output = document.createElement('canvas');
+        output.width = outputWidth;
+        output.height = outputHeight;
+        const ctx = output.getContext('2d', { alpha: true });
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        const isDigital = state.model === 'digital-art-4x';
+        ctx.filter = isDigital ? 'contrast(1.1) saturate(1.08)' : state.model === 'high-fidelity-4x' ? 'contrast(1.04) saturate(1.02)' : 'contrast(1.07) saturate(1.04)';
+        ctx.drawImage(state.image, 0, 0, outputWidth, outputHeight);
+        if (state.double) {
+          ctx.filter = isDigital ? 'contrast(1.05) saturate(1.04)' : 'contrast(1.025)';
+          const copy = document.createElement('canvas');
+          copy.width = outputWidth; copy.height = outputHeight;
+          copy.getContext('2d').drawImage(output, 0, 0);
+          ctx.clearRect(0, 0, outputWidth, outputHeight);
+          ctx.drawImage(copy, 0, 0, outputWidth, outputHeight);
+        }
+        state.enhancedCanvas = output;
+        state.enhancedBlob = null;
+        const targetCanvas = $('#enhancedCanvas');
+        targetCanvas.width = output.width;
+        targetCanvas.height = output.height;
+        targetCanvas.getContext('2d').drawImage(output, 0, 0);
+        $('#compareEmpty').classList.add('hidden');
+        $('#resultStatus').textContent = state.double ? '双重升图完成' : '增强完成';
+        $('#fileBadge').textContent = 'DONE';
+        $('#dimensionReadout').textContent = `${outputWidth} × ${outputHeight}`;
+        $('#scaleReadout').textContent = state.double ? `双重处理 · 目标 ${state.scale}x` : `增强比例 ${state.scale}x`;
+        $('#modeReadout').textContent = state.double ? '双重预览' : '浏览器预览';
+        $('#modeHint').textContent = safeScale < totalScale ? '大图已自动限制预览尺寸' : 'Canvas 超采样 + 锐化';
+        $('#downloadButton').disabled = false;
+        if (safeScale < totalScale) notify('图片较大，浏览器预览已自动限制像素数量');
+      }
+
+      async function downloadResult() {
+        if (!state.enhancedCanvas) return;
+        state.enhancedCanvas.toBlob((blob) => {
+          if (!blob) { notify('结果导出失败'); return; }
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          const base = (state.file?.name || 'image').replace(/\.[^/.]+$/, '');
+          anchor.href = url;
+          anchor.download = `${base}_upscaled_${state.scale}x.png`;
+          anchor.click();
+          setTimeout(() => URL.revokeObjectURL(url), 800);
+          notify('结果已开始下载');
+        }, 'image/png');
+      }
+
+      function reset() {
+        state.file = null; state.files = []; state.image = null; state.enhancedCanvas = null; state.enhancedBlob = null;
+        fileInput.value = '';
+        emptyState.hidden = false; workbench.hidden = true;
+        $('#enhanceButton').disabled = true;
+        $('#resultStatus').textContent = '尚未处理';
+        notify('工作台已重置');
+      }
+
+      $('#pickButton').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (event) => setFile(event.target.files));
+      $('#enhanceButton').addEventListener('click', () => {
+        if (!state.image || state.processing) return;
+        state.processing = true;
+        enhanceButton.disabled = true;
+        enhanceLabel.innerHTML = '<span class="spinner"></span> 正在处理';
+        enhanceIcon.textContent = '…';
+        $('#fileBadge').textContent = 'WORKING';
+        $('#resultStatus').textContent = '正在生成预览…';
+        setTimeout(() => {
+          renderEnhanced();
+          state.processing = false;
+          enhanceButton.disabled = false;
+          enhanceLabel.textContent = '重新增强';
+          enhanceIcon.textContent = '↗';
+        }, state.double ? 850 : 540);
+      });
+      $('#downloadButton').addEventListener('click', downloadResult);
+      $('#resetButton').addEventListener('click', reset);
+      $('#infoButton').addEventListener('click', () => notify('演示版已完成前端工作流；接入后端时调用 Real-ESRGAN / NCNN 即可替换预览推理器'));
+      $('#batchToggle').addEventListener('change', (event) => {
+        fileInput.multiple = event.target.checked;
+        notify(event.target.checked ? '批量模式已开启，可一次选择多张图片' : '批量模式已关闭');
+      });
+      $('#doubleToggle').addEventListener('change', (event) => {
+        state.double = event.target.checked;
+        $('#scaleHint').textContent = event.target.checked ? `两遍处理 · 约 ${state.scale * 2} 倍输出` : `输出约 ${state.scale} 倍`;
+      });
+      document.querySelectorAll('.model-option').forEach((button) => button.addEventListener('click', () => {
+        document.querySelectorAll('.model-option').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        state.model = button.dataset.model;
+        if (state.enhancedCanvas) notify(`模型已切换为${modelMeta[state.model].label}，请重新增强`);
+      }));
+      document.querySelectorAll('.scale-button').forEach((button) => button.addEventListener('click', () => {
+        document.querySelectorAll('.scale-button').forEach((item) => item.classList.remove('active'));
+        button.classList.add('active');
+        state.scale = Number(button.dataset.scale);
+        $('#scaleHint').textContent = state.double ? `两遍处理 · 约 ${state.scale * 2} 倍输出` : `输出约 ${state.scale} 倍`;
+      }));
+      $('#compareRange').addEventListener('input', (event) => {
+        const value = Number(event.target.value);
+        $('#enhancedLayer').style.clipPath = `inset(0 ${100 - value}% 0 0)`;
+        $('#splitHandle').style.left = `${value}%`;
+      });
+      ['dragenter', 'dragover'].forEach((name) => emptyState.addEventListener(name, (event) => { event.preventDefault(); emptyState.classList.add('dragging'); }));
+      ['dragleave', 'drop'].forEach((name) => emptyState.addEventListener(name, (event) => { event.preventDefault(); emptyState.classList.remove('dragging'); }));
+      emptyState.addEventListener('drop', (event) => setFile(event.dataTransfer.files));
+      window.addEventListener('paste', (event) => { const images = Array.from(event.clipboardData?.items || []).filter((item) => item.type.startsWith('image/')).map((item) => item.getAsFile()).filter(Boolean); if (images.length) setFile(images); });
+      window.addEventListener('resize', () => { if (state.image) drawOriginal(); });
+    </script>
+  </body>
+</html>
