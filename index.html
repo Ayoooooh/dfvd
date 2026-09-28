@@ -184,14 +184,6 @@
       .download-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid rgba(98, 229, 237, 0.24); border-radius: 9px; background: rgba(44, 144, 153, 0.11); color: #9cedea; font-size: 11px; font-weight: 800; }
       .download-button:hover { background: rgba(44, 144, 153, 0.2); }
 
-      .metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-      .metric-card { padding: 14px 15px; border: 1px solid var(--line); border-radius: 15px; background: rgba(17, 23, 42, 0.68); }
-      .metric-card span { display: block; color: var(--muted-2); font-size: 10px; font-weight: 750; letter-spacing: 0.03em; }
-      .metric-card strong { display: block; margin-top: 7px; color: #eaf1ff; font-size: 14px; }
-      .metric-card small { display: block; margin-top: 4px; color: #74819c; font-size: 10px; }
-      .backend-note { display: flex; align-items: flex-start; gap: 10px; padding: 14px 15px; border: 1px solid rgba(130, 116, 255, 0.22); border-radius: 15px; background: rgba(73, 58, 172, 0.1); color: #a6b1cc; font-size: 11px; line-height: 1.6; }
-      .backend-note b { color: #d6d1ff; }
-      .note-mark { flex: 0 0 auto; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 8px; background: rgba(130, 116, 255, 0.22); color: #bbb3ff; font-weight: 850; }
 
       .toast { position: fixed; right: 24px; bottom: 24px; z-index: 20; max-width: 360px; padding: 12px 15px; border: 1px solid rgba(98, 229, 237, 0.24); border-radius: 13px; background: rgba(16, 25, 45, 0.94); color: #e5efff; box-shadow: var(--shadow); font-size: 12px; opacity: 0; transform: translateY(12px); pointer-events: none; transition: 0.25s ease; }
       .toast.show { opacity: 1; transform: translateY(0); }
@@ -213,7 +205,6 @@
         .content { margin-top: 28px; }
         .empty-state { min-height: 480px; padding: 24px; }
         .compare-stage { min-height: 330px; padding: 12px; }
-        .metric-grid { grid-template-columns: 1fr; }
         .range-wrap { min-width: 0; }
         .range-wrap label { display: none; }
         input[type="range"] { width: 112px; }
@@ -280,8 +271,6 @@
           <div class="workbench" id="workbench" hidden>
             <div class="file-strip"><div class="file-info"><div class="file-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4.5h8l4 4V19a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5.5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.7"/><path d="M14 4.5V9h4M8 13h8M8 16h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div><div><div class="file-name" id="fileName">未命名图片</div><div class="file-meta" id="fileMeta">等待增强</div></div></div><div class="file-badge" id="fileBadge">READY</div></div>
             <div class="compare-card"><div class="compare-head"><div class="compare-title">细节对比 <span>左右拖动查看变化</span></div><div class="range-wrap"><label for="compareRange">原图</label><input id="compareRange" type="range" min="0" max="100" value="50" /><label>结果</label></div></div><div class="compare-stage"><div class="canvas-frame" id="canvasFrame"><canvas id="originalCanvas"></canvas><div class="enhanced-layer" id="enhancedLayer"><canvas id="enhancedCanvas"></canvas></div><div class="split-handle" id="splitHandle"></div><div class="stage-label original">ORIGINAL</div><div class="stage-label enhanced">ENHANCED</div><div class="compare-empty" id="compareEmpty">点击“开始增强”生成预览</div></div></div><div class="result-line"><div><span>输出状态&nbsp;&nbsp;</span><strong id="resultStatus">尚未处理</strong></div><button class="download-button" id="downloadButton" type="button" disabled><span>↓</span>下载结果</button></div></div>
-            <div class="metric-grid"><div class="metric-card"><span>处理模型</span><strong id="modelReadout">数字艺术</strong><small id="modelIdReadout">digital-art-4x</small></div><div class="metric-card"><span>输出尺寸</span><strong id="dimensionReadout">—</strong><small id="scaleReadout">增强比例 2x</small></div><div class="metric-card"><span>处理方式</span><strong id="modeReadout">浏览器预览</strong><small id="modeHint">Canvas 超采样 + 锐化</small></div></div>
-            <div class="backend-note"><div class="note-mark">i</div><div><b>关于这版演示：</b>当前页面已完成完整交互和本地预览链路，增强算法使用 Canvas 超采样与锐化模拟。要获得 Upscayl 同级输出，只需将后端推理接口接到 Real-ESRGAN / NCNN，并保留当前的模型、倍率和双重升图参数。</div></div>
           </div>
         </section>
       </main>
@@ -397,10 +386,6 @@
         $('#compareEmpty').classList.add('hidden');
         $('#resultStatus').textContent = state.double ? '双重升图完成' : '增强完成';
         $('#fileBadge').textContent = 'DONE';
-        $('#dimensionReadout').textContent = `${outputWidth} × ${outputHeight}`;
-        $('#scaleReadout').textContent = state.double ? `双重处理 · 目标 ${state.scale}x` : `增强比例 ${state.scale}x`;
-        $('#modeReadout').textContent = state.double ? '双重预览' : '浏览器预览';
-        $('#modeHint').textContent = safeScale < totalScale ? '大图已自动限制预览尺寸' : 'Canvas 超采样 + 锐化';
         $('#downloadButton').disabled = false;
         if (safeScale < totalScale) notify('图片较大，浏览器预览已自动限制像素数量');
       }
