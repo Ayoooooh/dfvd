@@ -137,11 +137,6 @@
       .icon-button svg { width: 16px; height: 16px; }
 
       .content { width: min(1100px, 100%); margin: 40px auto 0; }
-      .intro-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
-      .kicker { display: flex; align-items: center; gap: 8px; color: var(--cyan); font-size: 11px; font-weight: 800; letter-spacing: 0.13em; }
-      .kicker::before { content: ""; width: 22px; height: 1px; background: var(--cyan); box-shadow: 0 0 12px var(--cyan); }
-      h1 { max-width: 520px; margin: 11px 0 0; color: #f4f7ff; font-size: clamp(32px, 4.4vw, 58px); line-height: 0.98; letter-spacing: -0.07em; }
-      .intro-copy { max-width: 290px; margin: 0 0 3px; color: var(--muted); font-size: 13px; line-height: 1.65; }
 
       .empty-state { position: relative; min-height: 580px; display: grid; place-items: center; padding: 42px; overflow: hidden; border: 1px solid rgba(127, 151, 203, 0.16); border-radius: 26px; background: radial-gradient(circle at 50% 42%, rgba(56, 74, 137, 0.13), transparent 22rem), linear-gradient(145deg, rgba(18, 27, 51, 0.82), rgba(9, 14, 29, 0.9)); box-shadow: var(--shadow); }
       .empty-state::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(rgba(131, 160, 217, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(131, 160, 217, 0.05) 1px, transparent 1px); background-size: 50px 50px; mask-image: linear-gradient(to bottom, black, transparent 70%); pointer-events: none; }
@@ -207,8 +202,6 @@
         .app-shell { grid-template-columns: 260px minmax(0, 1fr); }
         .sidebar { padding-inline: 17px; }
         main { padding-inline: 24px; }
-        .intro-row { align-items: flex-start; flex-direction: column; }
-        .intro-copy { max-width: 520px; }
       }
       @media (max-width: 720px) {
         .app-shell { display: block; }
@@ -218,7 +211,6 @@
         .action-area { margin-top: 2px; }
         main { padding: 20px 15px 30px; }
         .content { margin-top: 28px; }
-        h1 { font-size: 42px; }
         .empty-state { min-height: 480px; padding: 24px; }
         .compare-stage { min-height: 330px; padding: 12px; }
         .metric-grid { grid-template-columns: 1fr; }
@@ -275,11 +267,6 @@
         </header>
 
         <section class="content">
-          <div class="intro-row">
-            <div><div class="kicker">LOCAL IMAGE LAB</div><h1>把模糊，<br />变成可用。</h1></div>
-            <p class="intro-copy">将图片放大、修复并重新组织细节。先用浏览器预览结果，确认方向后再接入真实 AI 推理服务。</p>
-          </div>
-
           <div class="empty-state" id="emptyState">
             <div class="empty-inner">
               <div class="drop-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M12 16V5m0 0L8 9m4-4 4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 14.5v2.2A2.3 2.3 0 0 0 7.3 19h9.4a2.3 2.3 0 0 0 2.3-2.3v-2.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
